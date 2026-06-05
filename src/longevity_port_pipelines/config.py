@@ -45,6 +45,7 @@ class PipelineConfig(BaseModel):
     min_interface_contacts: int = 5
     max_resolution: float = 3.0
     max_chain_length: int = 1000
+    allow_predicted_structures: bool = True
 
     # Stage 2: Foldseek conservation
     min_cluster_species: int = 3
@@ -54,8 +55,8 @@ class PipelineConfig(BaseModel):
     hub_partner_threshold: int = 15
 
     # Stage 5: embedding (Biohub Platform REST API; token via BIOHUB_API_TOKEN env)
-    biohub_api_url: str = "https://api.biohub.ai"
-    esmc_model: str = "esmc-600m"
+    biohub_api_url: str = "https://biohub.ai"
+    esmc_model: str = "esmc-300m-2024-12"
 
     # Stage 6: analysis
     n_permutations: int = 1000
