@@ -41,6 +41,16 @@ sets:
       - RELA
       - HIF1A
       - MYC
+    uniprot_ids:
+      - Q8N6T7   # SIRT6
+      - P09874   # PARP1
+      - P13010   # XRCC5 / Ku80
+      - P12956   # XRCC6 / Ku70
+      - P78527   # PRKDC / DNA-PKcs
+      - O60264   # SMARCA5 / SNF2H
+      - Q04206   # RELA
+      - Q16665   # HIF1A
+      - P01106   # MYC
     biological_mode: "maintained_or_enhanced_repair"
     interpretation_note: >
       Known longevity-relevant module. Expected signal may involve enhanced DNA repair function

@@ -90,14 +90,44 @@ def load_candidate_set_genes(cfg: PipelineConfig) -> set[str]:
     )
     return genes
 
+def load_candidate_set_uniprots(cfg: PipelineConfig) -> set[str]:
+    """Load explicit UniProt IDs from the configured candidate set."""
+    candidate_sets = load_candidate_sets(cfg.candidate_sets_path)
+
+    if cfg.candidate_set not in candidate_sets:
+        valid_sets = ", ".join(sorted(candidate_sets))
+        raise ValueError(
+            f"Unknown candidate set: {cfg.candidate_set!r}. "
+            f"Available candidate sets: {valid_sets}"
+        )
+
+    candidate_set = candidate_sets[cfg.candidate_set]
+    uniprot_ids = candidate_set.get("uniprot_ids", [])
+
+    ids = {
+        str(uniprot_id).strip()
+        for uniprot_id in uniprot_ids
+        if str(uniprot_id).strip()
+    }
+
+    logger.info(
+        "Loaded %d explicit UniProt IDs from candidate set %s",
+        len(ids),
+        cfg.candidate_set,
+    )
+    return ids
+
 def load_partner_aware_uniprots(cfg: PipelineConfig) -> set[str]:
     """Load focus longevity candidates plus strong post-translational partners.
 
     This avoids selecting random PINDER complexes while broadening beyond cases
     where the exact candidate protein itself appears in PINDER.
     """
+
     focus_genes = load_candidate_set_genes(cfg)
-    if not focus_genes:
+    configured_uniprots = load_candidate_set_uniprots(cfg)
+
+    if not focus_genes and not configured_uniprots:
         return load_candidate_uniprots(cfg)
 
     candidates_path = cfg.output_dir / "candidates.csv"
@@ -105,9 +135,9 @@ def load_partner_aware_uniprots(cfg: PipelineConfig) -> set[str]:
 
     if not candidates_path.exists() or not partners_path.exists():
         logger.warning(
-            "No candidates/interactome partner files found; using direct candidate UniProt IDs"
+            "No candidates/interactome partner files found; using configured/direct candidate UniProt IDs"
         )
-        return load_candidate_uniprots(cfg)
+        return configured_uniprots | load_candidate_uniprots(cfg)
 
     candidates = pl.read_csv(candidates_path)
     focus_ids = (
@@ -130,7 +160,7 @@ def load_partner_aware_uniprots(cfg: PipelineConfig) -> set[str]:
         )
     )
 
-    focus_set = set(focus_ids)
+    focus_set = set(focus_ids) | configured_uniprots
     partner_ids: set[str] = set()
 
     for row in partner_rows.select(["source", "target"]).to_dicts():
@@ -248,6 +278,13 @@ def select_candidates(lf: pl.LazyFrame, cfg: PipelineConfig) -> pl.LazyFrame:
                 n_candidate_complexes,
             )
             return candidate_selection.head(cfg.selection_count)
+
+        if not cfg.allow_unfiltered_fallback:
+            logger.warning(
+                "Candidate UniProt filter matched 0 PINDER complexes after quality filters; "
+                "returning empty selection because allow_unfiltered_fallback=False"
+            )
+            return candidate_selection
 
         logger.warning(
             "Candidate UniProt filter matched 0 PINDER complexes after quality filters; "
