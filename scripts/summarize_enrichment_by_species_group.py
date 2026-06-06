@@ -97,10 +97,11 @@ def main() -> None:
     long_mean = df.loc[df["is_long_lived_group"], enrichment_col].mean()
     short_mean = df.loc[df["is_short_lived_control"], enrichment_col].mean()
 
-    if pd.notna(long_mean) and pd.notna(short_mean):
-        delta = long_mean - short_mean
-    else:
-        delta = float("nan")
+    delta = (
+        long_mean - short_mean
+        if pd.notna(long_mean) and pd.notna(short_mean)
+        else float("nan")
+    )
 
     meta_row = pd.DataFrame(
         [

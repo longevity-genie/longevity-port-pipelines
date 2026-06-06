@@ -41,6 +41,8 @@ class PipelineConfig(BaseModel):
     # Stage 1: PINDER selection
     pinder_dataset: str = "Synthyra/PINDER"
     negatome_dataset: str = "Synthyra/NEGATOME"
+    candidate_sets_path: Path = Path("data/config/candidate_sets.yaml")
+    candidate_set: str = "ampk_pilot"
     selection_count: int = 10
     min_interface_contacts: int = 5
     max_resolution: float = 3.0

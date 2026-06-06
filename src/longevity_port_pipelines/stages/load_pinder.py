@@ -10,6 +10,7 @@ import polars as pl
 from huggingface_hub import hf_hub_download
 
 from longevity_port_pipelines.config import PipelineConfig
+from longevity_port_pipelines.config_utils import load_candidate_sets
 
 logger = logging.getLogger(__name__)
 
@@ -55,22 +56,49 @@ def load_candidate_uniprots(cfg: PipelineConfig) -> set[str]:
     )
     return set()
 
+def load_candidate_set_genes(cfg: PipelineConfig) -> set[str]:
+    """Load focus genes and explicit partner genes for the configured candidate set."""
+    candidate_sets = load_candidate_sets(cfg.candidate_sets_path)
+
+    if cfg.candidate_set not in candidate_sets:
+        valid_sets = ", ".join(sorted(candidate_sets))
+        raise ValueError(
+            f"Unknown candidate set: {cfg.candidate_set!r}. "
+            f"Available candidate sets: {valid_sets}"
+        )
+
+    candidate_set = candidate_sets[cfg.candidate_set]
+    focus_genes = candidate_set.get("focus_genes", [])
+    partner_genes = candidate_set.get("partners", [])
+
+    genes = {
+        str(gene).strip()
+        for gene in [*focus_genes, *partner_genes]
+        if str(gene).strip()
+    }
+
+    if not genes:
+        logger.warning(
+            "Candidate set %s has no focus_genes or partners; using direct candidate UniProt IDs",
+            cfg.candidate_set,
+        )
+
+    logger.info(
+        "Loaded %d configured genes from candidate set %s",
+        len(genes),
+        cfg.candidate_set,
+    )
+    return genes
+
 def load_partner_aware_uniprots(cfg: PipelineConfig) -> set[str]:
     """Load focus longevity candidates plus strong post-translational partners.
 
     This avoids selecting random PINDER complexes while broadening beyond cases
     where the exact candidate protein itself appears in PINDER.
     """
-    focus_genes = {
-        "CIRBP",
-        "RBM3",
-        "SIRT6",
-        "SIRT3",
-        "SOD2",
-        "SQSTM1",
-        "ERCC1",
-        "PRKAA1",
-    }
+    focus_genes = load_candidate_set_genes(cfg)
+    if not focus_genes:
+        return load_candidate_uniprots(cfg)
 
     candidates_path = cfg.output_dir / "candidates.csv"
     partners_path = cfg.output_dir / "interactome_partners.parquet"

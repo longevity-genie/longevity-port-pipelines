@@ -20,7 +20,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-
 from esm.sdk import ESMCForgeInferenceClient
 from esm.sdk.api import ESMProtein, ESMProteinError, LogitsConfig
 
