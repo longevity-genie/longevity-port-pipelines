@@ -19,6 +19,7 @@ PINDER_PARQUET_FILES = [
     "data/train-00001-of-00002.parquet",
 ]
 
+
 def load_candidate_uniprots(cfg: PipelineConfig) -> set[str]:
     """Load UniProt IDs from the curated longevity candidate list.
 
@@ -35,16 +36,10 @@ def load_candidate_uniprots(cfg: PipelineConfig) -> set[str]:
             continue
 
         with path.open(encoding="utf-8", newline="") as handle:
-            lines = (
-                line
-                for line in handle
-                if line.strip() and not line.lstrip().startswith("#")
-            )
+            lines = (line for line in handle if line.strip() and not line.lstrip().startswith("#"))
             reader = csv.DictReader(lines)
             uniprots = {
-                row["uniprot_id"].strip()
-                for row in reader
-                if row.get("uniprot_id", "").strip()
+                row["uniprot_id"].strip() for row in reader if row.get("uniprot_id", "").strip()
             }
 
         if uniprots:
@@ -56,6 +51,7 @@ def load_candidate_uniprots(cfg: PipelineConfig) -> set[str]:
     )
     return set()
 
+
 def load_candidate_set_genes(cfg: PipelineConfig) -> set[str]:
     """Load focus genes and explicit partner genes for the configured candidate set."""
     candidate_sets = load_candidate_sets(cfg.candidate_sets_path)
@@ -63,19 +59,14 @@ def load_candidate_set_genes(cfg: PipelineConfig) -> set[str]:
     if cfg.candidate_set not in candidate_sets:
         valid_sets = ", ".join(sorted(candidate_sets))
         raise ValueError(
-            f"Unknown candidate set: {cfg.candidate_set!r}. "
-            f"Available candidate sets: {valid_sets}"
+            f"Unknown candidate set: {cfg.candidate_set!r}. Available candidate sets: {valid_sets}"
         )
 
     candidate_set = candidate_sets[cfg.candidate_set]
     focus_genes = candidate_set.get("focus_genes", [])
     partner_genes = candidate_set.get("partners", [])
 
-    genes = {
-        str(gene).strip()
-        for gene in [*focus_genes, *partner_genes]
-        if str(gene).strip()
-    }
+    genes = {str(gene).strip() for gene in [*focus_genes, *partner_genes] if str(gene).strip()}
 
     if not genes:
         logger.warning(
@@ -90,6 +81,7 @@ def load_candidate_set_genes(cfg: PipelineConfig) -> set[str]:
     )
     return genes
 
+
 def load_candidate_set_uniprots(cfg: PipelineConfig) -> set[str]:
     """Load explicit UniProt IDs from the configured candidate set."""
     candidate_sets = load_candidate_sets(cfg.candidate_sets_path)
@@ -97,18 +89,13 @@ def load_candidate_set_uniprots(cfg: PipelineConfig) -> set[str]:
     if cfg.candidate_set not in candidate_sets:
         valid_sets = ", ".join(sorted(candidate_sets))
         raise ValueError(
-            f"Unknown candidate set: {cfg.candidate_set!r}. "
-            f"Available candidate sets: {valid_sets}"
+            f"Unknown candidate set: {cfg.candidate_set!r}. Available candidate sets: {valid_sets}"
         )
 
     candidate_set = candidate_sets[cfg.candidate_set]
     uniprot_ids = candidate_set.get("uniprot_ids", [])
 
-    ids = {
-        str(uniprot_id).strip()
-        for uniprot_id in uniprot_ids
-        if str(uniprot_id).strip()
-    }
+    ids = {str(uniprot_id).strip() for uniprot_id in uniprot_ids if str(uniprot_id).strip()}
 
     logger.info(
         "Loaded %d explicit UniProt IDs from candidate set %s",
@@ -116,6 +103,7 @@ def load_candidate_set_uniprots(cfg: PipelineConfig) -> set[str]:
         cfg.candidate_set,
     )
     return ids
+
 
 def load_partner_aware_uniprots(cfg: PipelineConfig) -> set[str]:
     """Load focus longevity candidates plus strong post-translational partners.
@@ -154,10 +142,7 @@ def load_partner_aware_uniprots(cfg: PipelineConfig) -> set[str]:
     partner_rows = partners.filter(
         (pl.col("type") == "post_translational")
         & (pl.col("n_sources") >= 5)
-        & (
-            pl.col("source").is_in(focus_ids)
-            | pl.col("target").is_in(focus_ids)
-        )
+        & (pl.col("source").is_in(focus_ids) | pl.col("target").is_in(focus_ids))
     )
 
     focus_set = set(focus_ids) | configured_uniprots
@@ -180,6 +165,7 @@ def load_partner_aware_uniprots(cfg: PipelineConfig) -> set[str]:
         len(partner_ids),
     )
     return expanded
+
 
 def load_pinder_index(cfg: PipelineConfig) -> pl.LazyFrame:
     """Download PINDER parquets from HuggingFace Hub and scan with polars."""
