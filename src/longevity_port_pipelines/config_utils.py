@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 
 def load_yaml(path: str | Path) -> dict[str, Any]:
@@ -33,7 +33,9 @@ def load_candidate_sets(path: str | Path = "data/config/candidate_sets.yaml") ->
     return sets
 
 
-def build_species_to_group_map(path: str | Path = "data/config/species_groups.yaml") -> dict[str, str]:
+def build_species_to_group_map(
+    path: str | Path = "data/config/species_groups.yaml",
+) -> dict[str, str]:
     data = load_yaml(path)
     species_to_group: dict[str, str] = {}
 

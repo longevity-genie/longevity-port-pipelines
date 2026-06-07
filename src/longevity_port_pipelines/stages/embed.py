@@ -20,11 +20,12 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from esm.sdk import ESMCForgeInferenceClient
-from esm.sdk.api import ESMProtein, ESMProteinError, LogitsConfig
+from esm.sdk import ESMCForgeInferenceClient  # type: ignore[import-untyped]
+from esm.sdk.api import ESMProtein, ESMProteinError, LogitsConfig  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 _CLIENT_CACHE: dict[tuple[str, str, str], ESMCForgeInferenceClient] = {}
+
 
 @dataclass
 class PerResidueEmbedding:
@@ -49,6 +50,7 @@ def get_biohub_token() -> str:
         )
     return token
 
+
 def get_esmc_client(
     model: str,
     api_url: str,
@@ -65,6 +67,7 @@ def get_esmc_client(
             request_timeout=timeout,
         )
     return _CLIENT_CACHE[key]
+
 
 def embed_sequence(
     sequence: str,

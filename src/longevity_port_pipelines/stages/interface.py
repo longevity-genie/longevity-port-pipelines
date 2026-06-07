@@ -35,6 +35,7 @@ def _per_atom_residue_index(chain: struc.AtomArray) -> np.ndarray:
     starts = struc.get_residue_starts(chain)
     return np.searchsorted(starts, np.arange(chain.array_length()), side="right") - 1
 
+
 def _resolve_chain_id(requested_chain_id: str, available_chain_ids: set[str]) -> str:
     """Resolve PINDER-style chain IDs like A1/B1 to PDB chain IDs like A/B.
 
@@ -49,6 +50,7 @@ def _resolve_chain_id(requested_chain_id: str, available_chain_ids: set[str]) ->
         return stripped
 
     return requested_chain_id
+
 
 def extract_interface_residues(
     pdb_path: Path,
