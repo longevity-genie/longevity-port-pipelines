@@ -5,11 +5,24 @@ from pathlib import Path
 import polars as pl
 
 
+def as_float(value: object, *, field_name: str) -> float:
+    if value is None:
+        raise ValueError(f"Missing numeric value for {field_name}")
+
+    if isinstance(value, str | int | float):
+        return float(value)
+
+    raise TypeError(f"Expected numeric value for {field_name}, got {type(value).__name__}")
+
+
 def directional_p(row: dict[str, object]) -> float:
-    effect_size = float(row["effect_size_cohens_d"])
+    effect_size = as_float(row["effect_size_cohens_d"], field_name="effect_size_cohens_d")
     if effect_size >= 0:
-        return float(row.get("p_interface_greater", row.get("mann_whitney_p", 1.0)))
-    return float(row.get("p_interface_less", 1.0))
+        return as_float(
+            row.get("p_interface_greater", row.get("mann_whitney_p", 1.0)),
+            field_name="p_interface_greater",
+        )
+    return as_float(row.get("p_interface_less", 1.0), field_name="p_interface_less")
 
 
 def confidence_label(effect_size: float, p_value: float) -> str:
@@ -25,7 +38,7 @@ def confidence_label(effect_size: float, p_value: float) -> str:
 
 def classify_outcome(row: dict[str, object]) -> tuple[str, str, str]:
     signal_class = str(row["signal_class"])
-    effect_size = float(row["effect_size_cohens_d"])
+    effect_size = as_float(row["effect_size_cohens_d"], field_name="effect_size_cohens_d")
     p_value = directional_p(row)
     confidence = confidence_label(effect_size, p_value)
 
@@ -153,7 +166,7 @@ def residue_summary(
         return ""
 
     return ";".join(
-        f"{int(row['residue_number_1based'])}{row['residue_aa']}:{float(row['delta']):.3f}"
+        f"{int(row['residue_number_1based'])}{row['residue_aa']}:{as_float(row['delta'], field_name='delta'):.3f}"
         for row in hits.iter_rows(named=True)
     )
 
@@ -203,7 +216,7 @@ def build_interaction_outcome_summary(
         complex_id = str(row["complex_id"])
         chain = str(row["chain"])
         target_species = str(row["target_species"])
-        effect_size = float(row["effect_size_cohens_d"])
+        effect_size = as_float(row["effect_size_cohens_d"], field_name="effect_size_cohens_d")
         p_value = directional_p(row)
 
         outcome_class, confidence, rationale = classify_outcome(row)
@@ -226,7 +239,9 @@ def build_interaction_outcome_summary(
                 "complex_id": complex_id,
                 "chain": chain,
                 "target_species": target_species,
-                "enrichment_ratio": float(row["enrichment_ratio"]),
+                "enrichment_ratio": as_float(
+                    row["enrichment_ratio"], field_name="enrichment_ratio"
+                ),
                 "effect_size_cohens_d": effect_size,
                 "p_directional": p_value,
                 "signal_class": str(row["signal_class"]),
