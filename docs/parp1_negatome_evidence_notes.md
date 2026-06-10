@@ -256,3 +256,31 @@ For the prioritized O60907/TBL1X candidate:
 5. decide whether `same_complex_exclusion_status` can move to `not_known_same_complex`;
 6. only then consider whether `curation_status` can move from `candidate_under_review` to `candidate_ready_for_input`.
 
+Minimum evidence required before promotion:
+
+```text
+candidate_negative_partner_sequence_status = sequence_available
+known_interaction_exclusion_status = no_known_direct_interaction_found
+homology_exclusion_status = not_close_homolog_of_true_partner
+same_complex_exclusion_status = not_known_same_complex
+curation_status = candidate_ready_for_input
+
+```
+
+Do not promote `O60907/TBL1X` if the targeted screen finds:
+
+- a direct PARP1/TBL1X interaction;
+- membership in the same PARP1-containing complex;
+- strong DNA-damage-response pathway coupling that makes it unsuitable as a negative-control partner;
+- ambiguous database evidence that cannot be resolved.
+
+If the targeted interaction screen is clean but pathway adjacency remains ambiguous, keep:
+
+```text
+curation_status = candidate_under_review
+known_interaction_exclusion_status = no_known_direct_interaction_found
+same_complex_exclusion_status = ambiguous_manual_review_needed
+
+```
+
+This would mean that TBL1X is not a known direct PARP1 interactor, but still may not be suitable as a final NEGATOME-style control until pathway-context review is resolved.
