@@ -3,16 +3,26 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal, TypedDict
 
 import requests
-from Bio.PDB import MMCIFParser, NeighborSearch, PDBParser
+from Bio.PDB import MMCIFParser, NeighborSearch, PDBParser  # type: ignore[attr-defined]
 from Bio.PDB.Polypeptide import is_aa
 from Bio.SeqUtils import seq1
 
 from longevity_port_pipelines.config import PipelineConfig
 
 StructureFormat = Literal["pdb", "cif"]
+
+
+class ChainPairRow(TypedDict):
+    receptor_chain: str
+    ligand_chain: str
+    receptor_score: float
+    ligand_score: float
+    interface_r_count: int
+    interface_l_count: int
+    atom_contacts: int
 
 
 def download_structure(pdb_id: str, output_dir: Path) -> tuple[Path, StructureFormat]:
@@ -40,7 +50,7 @@ def download_structure(pdb_id: str, output_dir: Path) -> tuple[Path, StructureFo
     return cif_path, "cif"
 
 
-def load_structure(path: Path, fmt: StructureFormat):
+def load_structure(path: Path, fmt: StructureFormat) -> Any:
     parser = PDBParser(QUIET=True) if fmt == "pdb" else MMCIFParser(QUIET=True)
     return parser.get_structure(path.stem, str(path))
 
@@ -115,7 +125,7 @@ def chain_match_candidates(
     return sorted(candidates, key=lambda item: (-item[1], item[0]))
 
 
-def residue_index_map(chain) -> dict[object, int]:
+def residue_index_map(chain: Any) -> dict[object, int]:
     mapping: dict[object, int] = {}
     index = 0
 
@@ -201,7 +211,7 @@ def best_spatial_chain_pair(
             f"receptor_candidates={receptor_candidates}, ligand_candidates={ligand_candidates}"
         )
 
-    pair_rows = []
+    pair_rows: list[ChainPairRow] = []
     for receptor_chain, receptor_score in receptor_candidates:
         for ligand_chain, ligand_score in ligand_candidates:
             if receptor_chain == ligand_chain:
