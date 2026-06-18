@@ -9,6 +9,10 @@ This is Stage 3 "Compatibility classification" from the LongevityPort plan:
     predict the cross-species complex (human chain A + ortholog chain B)
     and classify the interaction as maintained / functionally_broken / incompatible.
 
+Columns in enrichment.parquet:
+    complex_id, model_name, source_species, target_species, chain,
+    interface_mean_delta, noninterface_mean_delta, enrichment_ratio, ...
+
 Usage:
     uv run cofolding                          # top 10 by enrichment_ratio
     uv run cofolding --top-n 20               # top 20
@@ -157,7 +161,7 @@ def make_test_result(name: str) -> dict:
     iptm = rng.uniform(0.3, 0.95)
     bc   = rng.uniform(0.4, 0.95)
     return {
-        "prediction_id":       f"test_{name[:8]}",
+        "prediction_id":        f"test_{name[:8]}",
         "structure_confidence": round(rng.uniform(0.6, 0.98), 3),
         "ptm":                  round(rng.uniform(0.6, 0.95), 3),
         "iptm":                 round(iptm, 3),
@@ -177,6 +181,10 @@ def make_test_result(name: str) -> dict:
 def fetch_sequence_uniprot(uniprot_id: str) -> str:
     """
     Fetch canonical FASTA sequence from UniProt REST API.
+    UniProt — это база данных белков. У каждого белка есть уникальный ID
+    (например P04637 = человеческий p53). Мы скачиваем последовательность
+    аминокислот в формате FASTA — текстовый формат где каждая буква
+    обозначает одну аминокислоту.
     Falls back to a short placeholder if network is unavailable.
     """
     import urllib.request
@@ -187,7 +195,10 @@ def fetch_sequence_uniprot(uniprot_id: str) -> str:
         lines = [l for l in fasta.splitlines() if not l.startswith(">")]
         return "".join(lines)
     except Exception as exc:
-        typer.echo(f"  Warning: could not fetch {uniprot_id} from UniProt ({exc}). Using placeholder.", err=True)
+        typer.echo(
+            f"  Warning: could not fetch {uniprot_id} from UniProt ({exc}). Using placeholder.",
+            err=True,
+        )
         return "MKTIIALSYIFCLVFAQSIIGTEITMKFGKQYMYIAKRGEIPMDPNHHHHH"  # placeholder
 
 
@@ -198,17 +209,20 @@ def fetch_sequence_uniprot(uniprot_id: str) -> str:
 @app.command()
 def main(
     top_n: int = typer.Option(10, "--top-n", help="How many top candidates to process (ranked by enrichment_ratio)."),
-    complex_id: Optional[str] = typer.Option(None, "--complex", help="Run only this PDB complex ID."),
-    species: Optional[str] = typer.Option(None, "--species", help="Run only this species."),
+    complex_id: Optional[str] = typer.Option(None, "--complex", help="Run only this complex ID (matches complex_id column)."),
+    species: Optional[str] = typer.Option(None, "--species", help="Run only this target species."),
     test: bool = typer.Option(False, "--test", help="Test mode: fake predictions, no API calls, no credits spent."),
     num_samples: int = typer.Option(1, "--num-samples", help="Number of structure samples per prediction (more = more credits)."),
-):
+) -> None:
     """
     Co-fold cross-species protein complexes via Boltz API and classify
     interactions as maintained / functionally_broken / incompatible / uncertain.
     """
     # -----------------------------------------------------------------------
     # Load enrichment results
+    # enrichment.parquet — это таблица с результатами анализа эмбеддингов:
+    # для каждого комплекса и каждого вида посчитано насколько сильно
+    # изменились аминокислоты на интерфейсе vs остальные (enrichment_ratio).
     # -----------------------------------------------------------------------
     if not ENRICHMENT_PATH.exists():
         typer.echo(
@@ -221,7 +235,9 @@ def main(
 
     df = pl.read_parquet(ENRICHMENT_PATH)
 
-    # Filter to interface_divergent rows (those are the interesting candidates)
+    # Берём только строки где интерфейс статистически значимо расходится —
+    # это наши кандидаты на "перестроенное взаимодействие".
+    # signal_class появится в будущей версии; пока берём все строки.
     if "signal_class" in df.columns:
         candidates = df.filter(
             pl.col("signal_class").is_in([
@@ -232,13 +248,14 @@ def main(
     else:
         candidates = df
 
-    # Apply CLI filters
+    # Применяем фильтры из CLI если заданы
     if complex_id:
-        candidates = candidates.filter(pl.col("pdb_id") == complex_id)
+        candidates = candidates.filter(pl.col("complex_id") == complex_id)
     if species:
-        candidates = candidates.filter(pl.col("species") == species)
+        candidates = candidates.filter(pl.col("target_species") == species)
 
-    # Sort by enrichment_ratio descending and take top_n
+    # Сортируем по enrichment_ratio — чем выше, тем сильнее изменение
+    # сосредоточено на интерфейсе. Берём топ-N.
     if "enrichment_ratio" in candidates.columns:
         candidates = candidates.sort("enrichment_ratio", descending=True)
     candidates = candidates.head(top_n)
@@ -260,46 +277,50 @@ def main(
     results = []
 
     for row in candidates.iter_rows(named=True):
-        pdb_id      = row.get("pdb_id", "unknown")
-        chain_id    = row.get("chain_id", "?")
-        species_val = row.get("species", "unknown")
-        uniprot_human    = row.get("uniprot_human", "")
-        uniprot_ortholog = row.get("uniprot_ortholog", "")
+        # Правильные имена колонок из enrichment.parquet:
+        # complex_id  — идентификатор комплекса, например "7p6b__B1_P10636--7p6b__C1_P10636"
+        # chain       — "receptor" или "ligand" (какая цепочка анализировалась)
+        # source_species — всегда "human" (референс)
+        # target_species — вид с которым сравниваем: "naked_mole_rat", "mouse" и т.д.
+        complex_id_val  = row.get("complex_id", "unknown")
+        chain_val       = row.get("chain", "?")
+        source_species  = row.get("source_species", "human")
+        target_species  = row.get("target_species", "unknown")
         enrichment_ratio = row.get("enrichment_ratio", None)
 
-        name = f"{pdb_id}_{chain_id}_{species_val}"
-        typer.echo(f"  → {name}  (enrichment_ratio={enrichment_ratio:.3f})" if enrichment_ratio else f"  → {name}")
+        name = f"{complex_id_val}_{chain_val}_{target_species}"
+        # Обрезаем до 60 символов чтобы имя не было слишком длинным для API
+        name = name[:60]
+
+        typer.echo(
+            f"  → {complex_id_val} / {chain_val} / {target_species}"
+            + (f"  (enrichment_ratio={enrichment_ratio:.3f})" if enrichment_ratio else "")
+        )
 
         try:
             if test:
                 api_result = make_test_result(name)
             else:
-                # Fetch sequences from UniProt
-                typer.echo(f"    Fetching sequences...")
-                seq_human    = fetch_sequence_uniprot(uniprot_human)    if uniprot_human    else None
-                seq_ortholog = fetch_sequence_uniprot(uniprot_ortholog) if uniprot_ortholog else None
+                # В реальном режиме нам нужны последовательности белков.
+                # enrichment.parquet не хранит их напрямую — нужно брать
+                # из ortholog_coverage.csv или добавить join.
+                # Пока используем заглушку; это место для будущего улучшения.
+                typer.echo("    [Live mode] sequence lookup not yet implemented — skipping.", err=True)
+                continue
 
-                if not seq_human or not seq_ortholog:
-                    typer.echo(f"    Skipping {name}: missing sequence(s).", err=True)
-                    continue
-
-                typer.echo(f"    Submitting to Boltz API...")
-                api_result = submit_ppi_prediction(
-                    client, seq_human, seq_ortholog, name=name, num_samples=num_samples
-                )
-
-            # Classify interaction
+            # Классифицируем взаимодействие по структурным метрикам:
+            # iptm (interface predicted TM-score) — насколько модель уверена
+            # в предсказанной структуре интерфейса. 0–1, выше = лучше.
             iptm = api_result["iptm"]
             bc   = api_result["binding_confidence"]
             classification = classify_interaction(iptm, bc)
 
             result_row = {
-                "pdb_id":            pdb_id,
-                "chain_id":          chain_id,
-                "species":           species_val,
-                "enrichment_ratio":  enrichment_ratio,
-                "uniprot_human":     uniprot_human,
-                "uniprot_ortholog":  uniprot_ortholog,
+                "complex_id":           complex_id_val,
+                "chain":                chain_val,
+                "source_species":       source_species,
+                "target_species":       target_species,
+                "enrichment_ratio":     enrichment_ratio,
                 "boltz_classification": classification,
                 **api_result,
             }
@@ -314,10 +335,13 @@ def main(
         except Exception as exc:
             typer.echo(f"    ERROR for {name}: {exc}", err=True)
             results.append({
-                "pdb_id": pdb_id, "chain_id": chain_id, "species": species_val,
-                "enrichment_ratio": enrichment_ratio,
+                "complex_id":           complex_id_val,
+                "chain":                chain_val,
+                "source_species":       source_species,
+                "target_species":       target_species,
+                "enrichment_ratio":     enrichment_ratio,
                 "boltz_classification": "error",
-                "error_message": str(exc),
+                "error_message":        str(exc),
             })
 
     # -----------------------------------------------------------------------
