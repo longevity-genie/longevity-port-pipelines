@@ -214,10 +214,23 @@ def write_ortholog_coverage(
 
     rows = [m.model_dump() for m in mappings]
     df = pl.DataFrame(rows) if rows else pl.DataFrame()
-    df.write_csv(output_path)
-    logger.info("Wrote ortholog coverage: %d mappings -> %s", len(rows), output_path)
-    return output_path
 
+    # Дедупликация: один и тот же белок участвует в нескольких комплексах,
+    # поэтому его ортологи запрашиваются многократно. Убираем повторы по
+    # ключу (исходный белок, целевой вид, целевой белок).
+    if not df.is_empty():
+        before = len(df)
+        df = df.unique(
+            subset=["source_uniprot", "target_species_taxid", "target_uniprot"],
+            keep="first",
+        )
+        after = len(df)
+        if before != after:
+            logger.info("Deduplicated ortholog coverage: %d -> %d rows", before, after)
+
+    df.write_csv(output_path)
+    logger.info("Wrote ortholog coverage: %d mappings -> %s", len(df), output_path)
+    return output_path
 
 def run_stage(
     candidates_lf: pl.LazyFrame, cfg: PipelineConfig
