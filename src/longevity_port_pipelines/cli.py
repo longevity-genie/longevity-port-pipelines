@@ -121,7 +121,9 @@ def analyze(
     embeddings_path = output_dir / "embeddings"
 
     if not selection_path.exists() or not coverage_path.exists():
-        typer.echo("Missing selection.csv or ortholog_coverage.csv — run earlier stages first.", err=True)
+        typer.echo(
+            "Missing selection.csv or ortholog_coverage.csv — run earlier stages first.", err=True
+        )
         raise typer.Exit(1)
 
     if not embeddings_path.exists():
