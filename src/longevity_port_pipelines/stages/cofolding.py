@@ -29,7 +29,7 @@ from __future__ import annotations
 import os
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any
 
 import polars as pl
 import typer
@@ -47,14 +47,15 @@ COFOLDING_RESULTS = DATA_OUTPUT / "cofolding_results.parquet"
 # Compatibility classification thresholds
 # (tune after you have a few real predictions to calibrate)
 # ---------------------------------------------------------------------------
-MAINTAINED_IPTM_THRESHOLD = 0.75       # iptm >= this → likely maintained
-BROKEN_IPTM_THRESHOLD = 0.45           # iptm < this → likely broken
-BINDING_CONFIDENCE_HIGH = 0.70         # Boltz docs: 0.7+ is high-confidence
+MAINTAINED_IPTM_THRESHOLD = 0.75  # iptm >= this -> likely maintained
+BROKEN_IPTM_THRESHOLD = 0.45  # iptm < this -> likely broken
+BINDING_CONFIDENCE_HIGH = 0.70  # Boltz docs: 0.7+ is high-confidence
 
 
 def classify_interaction(iptm: float, binding_confidence: float | None) -> str:
     """
     Binary structural filter: maintained / functionally_broken / incompatible / uncertain.
+
     Current models do not reliably predict absolute binding affinity, so this is
     a pass/fail filter only (as noted in the LongevityPort design doc).
     """
@@ -71,16 +72,17 @@ def classify_interaction(iptm: float, binding_confidence: float | None) -> str:
 # Boltz API helpers
 # ---------------------------------------------------------------------------
 
-def get_boltz_client():
+
+def get_boltz_client() -> Any:
     """Return an authenticated Boltz client. Requires BOLTZ_API_KEY in env."""
     try:
-        from boltz_api import Boltz  # pip install boltz-api
-    except ImportError:
+        from boltz_api import Boltz  # type: ignore[import-not-found]
+    except ImportError as err:
         typer.echo(
             "boltz_api not installed. Run:\n  uv add boltz-api\nor:\n  pip install boltz-api",
             err=True,
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from err
 
     api_key = os.environ.get("BOLTZ_API_KEY")
     if not api_key:
@@ -94,12 +96,12 @@ def get_boltz_client():
 
 
 def submit_ppi_prediction(
-    client,
+    client: Any,
     seq_human: str,
     seq_ortholog: str,
     name: str,
     num_samples: int = 1,
-) -> dict:
+) -> dict[str, Any]:
     """
     Submit a protein-protein co-folding prediction to Boltz API.
 
@@ -110,7 +112,7 @@ def submit_ppi_prediction(
     """
     prediction_input = {
         "entities": [
-            {"type": "protein", "value": seq_human,    "chain_ids": ["A"]},
+            {"type": "protein", "value": seq_human, "chain_ids": ["A"]},
             {"type": "protein", "value": seq_ortholog, "chain_ids": ["B"]},
         ],
         "binding": {
@@ -132,9 +134,7 @@ def submit_ppi_prediction(
         prediction = client.predictions.structure_and_binding.retrieve(prediction.id)
 
     if prediction.status == "failed":
-        raise RuntimeError(
-            f"Boltz prediction failed for {name}: {prediction.error}"
-        )
+        raise RuntimeError(f"Boltz prediction failed for {name}: {prediction.error}")
 
     best = prediction.output.best_sample
     metrics = best.metrics
@@ -143,34 +143,35 @@ def submit_ppi_prediction(
     return {
         "prediction_id": prediction.id,
         "structure_confidence": metrics.structure_confidence,
-        "ptm":                  metrics.ptm,
-        "iptm":                 metrics.iptm,
-        "complex_plddt":        metrics.complex_plddt,
-        "complex_iplddt":       metrics.complex_iplddt,
-        "complex_pde":          metrics.complex_pde,
-        "complex_ipde":         metrics.complex_ipde,
-        "binding_confidence":   binding.binding_confidence if binding else None,
-        "structure_url":        best.structure.url if best.structure else None,
+        "ptm": metrics.ptm,
+        "iptm": metrics.iptm,
+        "complex_plddt": metrics.complex_plddt,
+        "complex_iplddt": metrics.complex_iplddt,
+        "complex_pde": metrics.complex_pde,
+        "complex_ipde": metrics.complex_ipde,
+        "binding_confidence": binding.binding_confidence if binding else None,
+        "structure_url": best.structure.url if best.structure else None,
     }
 
 
-def make_test_result(name: str) -> dict:
+def make_test_result(name: str) -> dict[str, Any]:
     """Return a fake result for --test mode (no API call, no credits used)."""
     import random
+
     rng = random.Random(name)
     iptm = rng.uniform(0.3, 0.95)
-    bc   = rng.uniform(0.4, 0.95)
+    bc = rng.uniform(0.4, 0.95)
     return {
-        "prediction_id":        f"test_{name[:8]}",
+        "prediction_id": f"test_{name[:8]}",
         "structure_confidence": round(rng.uniform(0.6, 0.98), 3),
-        "ptm":                  round(rng.uniform(0.6, 0.95), 3),
-        "iptm":                 round(iptm, 3),
-        "complex_plddt":        round(rng.uniform(0.7, 0.97), 3),
-        "complex_iplddt":       round(rng.uniform(0.6, 0.92), 3),
-        "complex_pde":          round(rng.uniform(0.8, 3.5), 3),
-        "complex_ipde":         round(rng.uniform(1.0, 5.0), 3),
-        "binding_confidence":   round(bc, 3),
-        "structure_url":        None,
+        "ptm": round(rng.uniform(0.6, 0.95), 3),
+        "iptm": round(iptm, 3),
+        "complex_plddt": round(rng.uniform(0.7, 0.97), 3),
+        "complex_iplddt": round(rng.uniform(0.6, 0.92), 3),
+        "complex_pde": round(rng.uniform(0.8, 3.5), 3),
+        "complex_ipde": round(rng.uniform(1.0, 5.0), 3),
+        "binding_confidence": round(bc, 3),
+        "structure_url": None,
     }
 
 
@@ -178,21 +179,23 @@ def make_test_result(name: str) -> dict:
 # Sequence fetching
 # ---------------------------------------------------------------------------
 
+
 def fetch_sequence_uniprot(uniprot_id: str) -> str:
     """
     Fetch canonical FASTA sequence from UniProt REST API.
-    UniProt — это база данных белков. У каждого белка есть уникальный ID
-    (например P04637 = человеческий p53). Мы скачиваем последовательность
-    аминокислот в формате FASTA — текстовый формат где каждая буква
-    обозначает одну аминокислоту.
-    Falls back to a short placeholder if network is unavailable.
+
+    UniProt is a protein database; each protein has a unique ID
+    (e.g. P04637 = human p53). We download the amino-acid sequence
+    in FASTA format (one letter per residue).
+    Falls back to a short placeholder if the network is unavailable.
     """
     import urllib.request
+
     url = f"https://rest.uniprot.org/uniprotkb/{uniprot_id}.fasta"
     try:
         with urllib.request.urlopen(url, timeout=15) as resp:
             fasta = resp.read().decode()
-        lines = [l for l in fasta.splitlines() if not l.startswith(">")]
+        lines = [line for line in fasta.splitlines() if not line.startswith(">")]
         return "".join(lines)
     except Exception as exc:
         typer.echo(
@@ -206,23 +209,34 @@ def fetch_sequence_uniprot(uniprot_id: str) -> str:
 # Main command
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def main(
-    top_n: int = typer.Option(10, "--top-n", help="How many top candidates to process (ranked by enrichment_ratio)."),
-    complex_id: Optional[str] = typer.Option(None, "--complex", help="Run only this complex ID (matches complex_id column)."),
-    species: Optional[str] = typer.Option(None, "--species", help="Run only this target species."),
-    test: bool = typer.Option(False, "--test", help="Test mode: fake predictions, no API calls, no credits spent."),
-    num_samples: int = typer.Option(1, "--num-samples", help="Number of structure samples per prediction (more = more credits)."),
+    top_n: int = typer.Option(
+        10, "--top-n", help="How many top candidates to process (ranked by enrichment_ratio)."
+    ),
+    complex_id: str | None = typer.Option(
+        None, "--complex", help="Run only this complex ID (matches complex_id column)."
+    ),
+    species: str | None = typer.Option(None, "--species", help="Run only this target species."),
+    test: bool = typer.Option(
+        False, "--test", help="Test mode: fake predictions, no API calls, no credits spent."
+    ),
+    num_samples: int = typer.Option(
+        1,
+        "--num-samples",
+        help="Number of structure samples per prediction (more = more credits).",
+    ),
 ) -> None:
     """
     Co-fold cross-species protein complexes via Boltz API and classify
     interactions as maintained / functionally_broken / incompatible / uncertain.
     """
     # -----------------------------------------------------------------------
-    # Load enrichment results
-    # enrichment.parquet — это таблица с результатами анализа эмбеддингов:
-    # для каждого комплекса и каждого вида посчитано насколько сильно
-    # изменились аминокислоты на интерфейсе vs остальные (enrichment_ratio).
+    # Load enrichment results.
+    # enrichment.parquet holds the embedding-divergence analysis: for each
+    # complex and each species, how strongly interface residues diverge
+    # relative to non-interface residues (enrichment_ratio).
     # -----------------------------------------------------------------------
     if not ENRICHMENT_PATH.exists():
         typer.echo(
@@ -235,27 +249,29 @@ def main(
 
     df = pl.read_parquet(ENRICHMENT_PATH)
 
-    # Берём только строки где интерфейс статистически значимо расходится —
-    # это наши кандидаты на "перестроенное взаимодействие".
-    # signal_class появится в будущей версии; пока берём все строки.
+    # Keep only rows where the interface significantly diverges -- these are
+    # the candidates for a "remodeled interaction". signal_class is a future
+    # column; for now we take all rows.
     if "signal_class" in df.columns:
         candidates = df.filter(
-            pl.col("signal_class").is_in([
-                "interface_divergent",
-                "interface_divergent_not_significant",
-            ])
+            pl.col("signal_class").is_in(
+                [
+                    "interface_divergent",
+                    "interface_divergent_not_significant",
+                ]
+            )
         )
     else:
         candidates = df
 
-    # Применяем фильтры из CLI если заданы
+    # Apply CLI filters if provided.
     if complex_id:
         candidates = candidates.filter(pl.col("complex_id") == complex_id)
     if species:
         candidates = candidates.filter(pl.col("target_species") == species)
 
-    # Сортируем по enrichment_ratio — чем выше, тем сильнее изменение
-    # сосредоточено на интерфейсе. Берём топ-N.
+    # Sort by enrichment_ratio -- higher means divergence is more concentrated
+    # at the interface. Take the top N.
     if "enrichment_ratio" in candidates.columns:
         candidates = candidates.sort("enrichment_ratio", descending=True)
     candidates = candidates.head(top_n)
@@ -267,33 +283,33 @@ def main(
     typer.echo(f"\n{'[TEST MODE] ' if test else ''}Processing {len(candidates)} candidates...\n")
 
     # -----------------------------------------------------------------------
-    # Set up Boltz client (skip in test mode)
+    # Set up Boltz client (skip in test mode).
     # -----------------------------------------------------------------------
     client = None if test else get_boltz_client()
 
     # -----------------------------------------------------------------------
-    # Process each candidate
+    # Process each candidate.
     # -----------------------------------------------------------------------
-    results = []
+    results: list[dict[str, Any]] = []
 
     for row in candidates.iter_rows(named=True):
-        # Правильные имена колонок из enrichment.parquet:
-        # complex_id  — идентификатор комплекса, например "7p6b__B1_P10636--7p6b__C1_P10636"
-        # chain       — "receptor" или "ligand" (какая цепочка анализировалась)
-        # source_species — всегда "human" (референс)
-        # target_species — вид с которым сравниваем: "naked_mole_rat", "mouse" и т.д.
-        complex_id_val  = row.get("complex_id", "unknown")
-        chain_val       = row.get("chain", "?")
-        source_species  = row.get("source_species", "human")
-        target_species  = row.get("target_species", "unknown")
+        # Column names in enrichment.parquet:
+        # complex_id  -- complex identifier, e.g. "7p6b__B1_P10636--7p6b__C1_P10636"
+        # chain       -- "receptor" or "ligand" (which chain was analyzed)
+        # source_species -- always "human" (the reference)
+        # target_species -- the species we compare against: "naked_mole_rat", "mouse", ...
+        complex_id_val = row.get("complex_id", "unknown")
+        chain_val = row.get("chain", "?")
+        source_species = row.get("source_species", "human")
+        target_species = row.get("target_species", "unknown")
         enrichment_ratio = row.get("enrichment_ratio", None)
 
         name = f"{complex_id_val}_{chain_val}_{target_species}"
-        # Обрезаем до 60 символов чтобы имя не было слишком длинным для API
+        # Truncate to 60 chars so the job name is not too long for the API.
         name = name[:60]
 
         typer.echo(
-            f"  → {complex_id_val} / {chain_val} / {target_species}"
+            f"  -> {complex_id_val} / {chain_val} / {target_species}"
             + (f"  (enrichment_ratio={enrichment_ratio:.3f})" if enrichment_ratio else "")
         )
 
@@ -301,51 +317,65 @@ def main(
             if test:
                 api_result = make_test_result(name)
             else:
-                # В реальном режиме нам нужны последовательности белков.
-                # enrichment.parquet не хранит их напрямую — нужно брать
-                # из ortholog_coverage.csv или добавить join.
-                # Пока используем заглушку; это место для будущего улучшения.
-                typer.echo("    [Live mode] sequence lookup not yet implemented — skipping.", err=True)
-                continue
+                # In live mode we need protein sequences. enrichment.parquet
+                # embeds the UniProt IDs inside complex_id, so we parse them out
+                # and fetch sequences from UniProt.
+                # Format: "7p6b__B1_P10636--7p6b__C1_P10636".
+                import re
 
-            # Классифицируем взаимодействие по структурным метрикам:
-            # iptm (interface predicted TM-score) — насколько модель уверена
-            # в предсказанной структуре интерфейса. 0–1, выше = лучше.
+                uniprot_ids = re.findall(r"_([A-Z0-9]{6,10})(?:--|$|_)", complex_id_val)
+                if len(uniprot_ids) < 2:
+                    typer.echo(f"    Skipping {name}: could not parse UniProt IDs.", err=True)
+                    continue
+
+                seq_human = fetch_sequence_uniprot(uniprot_ids[0])
+                seq_ortholog = fetch_sequence_uniprot(uniprot_ids[1])
+
+                typer.echo("    Submitting to Boltz API...")
+                api_result = submit_ppi_prediction(
+                    client, seq_human, seq_ortholog, name=name, num_samples=num_samples
+                )
+
+            # Classify the interaction from structural metrics.
+            # iptm (interface predicted TM-score) reflects how confident the
+            # model is in the predicted interface structure. 0-1, higher = better.
             iptm = api_result["iptm"]
-            bc   = api_result["binding_confidence"]
+            bc = api_result["binding_confidence"]
             classification = classify_interaction(iptm, bc)
 
             result_row = {
-                "complex_id":           complex_id_val,
-                "chain":                chain_val,
-                "source_species":       source_species,
-                "target_species":       target_species,
-                "enrichment_ratio":     enrichment_ratio,
+                "complex_id": complex_id_val,
+                "chain": chain_val,
+                "source_species": source_species,
+                "target_species": target_species,
+                "enrichment_ratio": enrichment_ratio,
                 "boltz_classification": classification,
                 **api_result,
             }
             results.append(result_row)
 
             typer.echo(
-                f"    iptm={iptm:.3f}  binding_conf={bc:.3f}  → {classification}"
+                f"    iptm={iptm:.3f}  binding_conf={bc:.3f}  -> {classification}"
                 if bc is not None
-                else f"    iptm={iptm:.3f}  → {classification}"
+                else f"    iptm={iptm:.3f}  -> {classification}"
             )
 
         except Exception as exc:
             typer.echo(f"    ERROR for {name}: {exc}", err=True)
-            results.append({
-                "complex_id":           complex_id_val,
-                "chain":                chain_val,
-                "source_species":       source_species,
-                "target_species":       target_species,
-                "enrichment_ratio":     enrichment_ratio,
-                "boltz_classification": "error",
-                "error_message":        str(exc),
-            })
+            results.append(
+                {
+                    "complex_id": complex_id_val,
+                    "chain": chain_val,
+                    "source_species": source_species,
+                    "target_species": target_species,
+                    "enrichment_ratio": enrichment_ratio,
+                    "boltz_classification": "error",
+                    "error_message": str(exc),
+                }
+            )
 
     # -----------------------------------------------------------------------
-    # Save results
+    # Save results.
     # -----------------------------------------------------------------------
     if not results:
         typer.echo("No results to save.", err=True)
@@ -359,12 +389,11 @@ def main(
     typer.echo(f"\nSaved {len(results)} rows to {COFOLDING_RESULTS}")
 
     # -----------------------------------------------------------------------
-    # Summary
+    # Summary.
     # -----------------------------------------------------------------------
     if "boltz_classification" in out_df.columns:
         summary = (
-            out_df
-            .group_by("boltz_classification")
+            out_df.group_by("boltz_classification")
             .agg(pl.len().alias("count"))
             .sort("count", descending=True)
         )
