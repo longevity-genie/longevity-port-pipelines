@@ -317,7 +317,9 @@ def build_curated_control_closure(
 
     return (
         pl.DataFrame(rows)
-        .select([pl.col(column).cast(dtype).alias(column) for column, dtype in CLOSURE_SCHEMA.items()])
+        .select(
+            [pl.col(column).cast(dtype).alias(column) for column, dtype in CLOSURE_SCHEMA.items()]
+        )
         .sort(["closure_status", "complex_id", "chain", "target_species_taxid"])
     )
 
