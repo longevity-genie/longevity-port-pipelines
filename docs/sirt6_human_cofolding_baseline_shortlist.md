@@ -406,7 +406,3 @@ blocked by source UniProt:
 This does not create a new biological claim. It turns the broad
 fix_species_coverage preflight result into an explicit worklist for reviewing
 ortholog provenance before long-lived-vs-short-lived interpretation.
-
-This does not create a new biological claim. It turns the broad
-fix_species_coverage preflight result into an explicit worklist for reviewing
-ortholog provenance before long-lived-vs-short-lived interpretation.
