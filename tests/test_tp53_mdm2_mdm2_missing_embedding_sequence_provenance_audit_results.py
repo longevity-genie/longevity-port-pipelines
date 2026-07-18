@@ -131,3 +131,30 @@ def test_validator_rejects_biological_claim() -> None:
             audit.read_csv_rows(GATE8_AUDIT_TABLE),
             data_input_dir=DATA_INPUT_DIR,
         )
+
+
+def test_hash_discovery_uses_repo_relative_references(
+    tmp_path: Path,
+) -> None:
+    data_input_dir = tmp_path / "alternate_checkout" / "data" / "input"
+    data_input_dir.mkdir(parents=True)
+
+    source = data_input_dir / "sequence_review.csv"
+    source.write_text(
+        f"candidate_accession,sequence_sha256\nA0ABM2YB85,{audit.EXPECTED_HAMSTER_SHA256}\n",
+        encoding="utf-8",
+    )
+
+    findings = audit.discover_committed_accession_hashes(
+        data_input_dir,
+        "A0ABM2YB85",
+    )
+
+    assert findings == [
+        (
+            "data/input/sequence_review.csv",
+            1,
+            "sequence_sha256",
+            audit.EXPECTED_HAMSTER_SHA256,
+        )
+    ]

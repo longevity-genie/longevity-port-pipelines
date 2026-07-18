@@ -177,7 +177,17 @@ def discover_committed_accession_hashes(
             for hash_field in SHA256_FIELDS:
                 value = row.get(hash_field, "").strip().lower()
                 if SHA256_PATTERN.fullmatch(value):
-                    findings.append((_repo_relative(path), index, hash_field, value))
+                    canonical_path = (
+                        DEFAULT_DATA_INPUT_DIR / path.relative_to(data_input_dir)
+                    ).as_posix()
+                    findings.append(
+                        (
+                            canonical_path,
+                            index,
+                            hash_field,
+                            value,
+                        )
+                    )
 
     return findings
 
