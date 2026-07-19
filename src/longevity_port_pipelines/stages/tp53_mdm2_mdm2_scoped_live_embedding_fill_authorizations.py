@@ -238,11 +238,10 @@ def write_csv_rows(path: Path, rows: list[dict[str, str]], fields: list[str]) ->
 
 
 def file_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+    """Return a cross-platform canonical UTF-8/LF text SHA-256."""
+    text = path.read_text(encoding="utf-8-sig")
+    canonical_text = text.replace("\r\n", "\n").replace("\r", "\n")
+    return hashlib.sha256(canonical_text.encode("utf-8")).hexdigest()
 
 
 def require(row: dict[str, str], field: str, expected: str) -> None:
@@ -500,8 +499,8 @@ def build_validation_rows(auth_rows: list[dict[str, str]]) -> list[dict[str, str
                 "target_accession": auth["target_accession"],
                 "authorization_source_table": AUTH_TABLE.as_posix(),
                 "authorization_row_index": str(index),
-                "source_manifest_integrity_status": "passed_exact_file_sha256_binding",
-                "source_validation_integrity_status": "passed_exact_file_sha256_binding",
+                "source_manifest_integrity_status": "passed_canonical_utf8_lf_sha256_binding",
+                "source_validation_integrity_status": "passed_canonical_utf8_lf_sha256_binding",
                 "accession_scope_validation_status": "passed_exact_two_accession_scope",
                 "identity_binding_validation_status": "passed_accession_taxid_length_hash_binding",
                 "path_binding_validation_status": "passed_canonical_ignored_embedding_path_binding",

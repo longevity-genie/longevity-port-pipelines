@@ -6,7 +6,7 @@ BioHub or ESMC call.
 
 ## Integrity binding
 
-The authorization stores exact file SHA-256 values for the preceding manifest
+The authorization stores canonical UTF-8/LF text SHA-256 values for the preceding manifest
 and its committed validation result. Any change to either source CSV invalidates
 the authorization until it is reviewed and regenerated.
 

@@ -36,6 +36,18 @@ def test_exact_two_accessions_are_authorized() -> None:
     assert {row["allowed_live_accessions"] for row in rows} == {"P23804|A0ABM2YB85"}
 
 
+def test_file_sha256_is_independent_of_line_endings(
+    tmp_path: Path,
+) -> None:
+    lf_path = tmp_path / "lf.csv"
+    crlf_path = tmp_path / "crlf.csv"
+
+    lf_path.write_bytes(b"column_a,column_b\n1,2\n")
+    crlf_path.write_bytes(b"column_a,column_b\r\n1,2\r\n")
+
+    assert authorization.file_sha256(lf_path) == (authorization.file_sha256(crlf_path))
+
+
 def test_source_contract_files_are_hash_bound() -> None:
     rows, _ = load_authorization()
     manifest_sha = authorization.file_sha256(ROOT / authorization.SOURCE_MANIFEST)

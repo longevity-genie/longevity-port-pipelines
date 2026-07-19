@@ -9,8 +9,8 @@ description: >
   authorization. No execution is performed.
 
 required_values:
-  source_manifest_integrity_status: passed_exact_file_sha256_binding
-  source_validation_integrity_status: passed_exact_file_sha256_binding
+  source_manifest_integrity_status: passed_canonical_utf8_lf_sha256_binding
+  source_validation_integrity_status: passed_canonical_utf8_lf_sha256_binding
   accession_scope_validation_status: passed_exact_two_accession_scope
   sequential_execution_policy_validation_status: passed_max_live_batch_size_one
   authorization_validation_status: passed_policy_only_validation
