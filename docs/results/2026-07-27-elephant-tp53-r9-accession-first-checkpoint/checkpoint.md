@@ -87,15 +87,19 @@ TP53 truncation controls so that a W23G effect can be
 distinguished from a generic effect of losing the C-terminal
 half of TP53.
 
-A beneficial-breakage claim requires concordant evidence that
-`G23W`:
+Evidence is assigned to three claim tiers:
 
-1. restores MDM2 association in orthogonal assays;
-2. changes ubiquitination or protein stability in the
-   predicted direction;
-3. reduces the p53-R9 apoptotic phenotype;
-4. produces an effect not fully explained by matched
-   truncation controls.
+1. `binding_causal`: `G23W` restores MDM2 association in
+   orthogonal assays;
+2. `regulatory_causal`: binding rescue changes p53-R9
+   regulation or its guardian effect on canonical TP53;
+3. `phenotype_causal`: the regulatory effect changes
+   abundance-adjusted apoptosis or TP53 signaling and is not
+   fully explained by matched truncation controls.
+
+Because the 180-aa p53-R9 protein lacks the predominant
+C-terminal p53 ubiquitination sites, unchanged turnover does
+not by itself refute restored MDM2 binding.
 
 The package separately tests the guardian and Tid1/Bax
 mitochondrial mechanisms and records the published conflict
@@ -106,6 +110,7 @@ See:
 - `experiment_spec.md`
 - `construct_panel.csv`
 - `causal_hypotheses.csv`
+- `claim_tiers.csv`
 - `readout_decision_table.csv`
 - `published_evidence_conflicts.csv`
 

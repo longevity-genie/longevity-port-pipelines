@@ -37,20 +37,21 @@ in parallel.
 
 `p53-R9 WT (G23)` versus `p53-R9 G23W`.
 
-The beneficial-breakage claim is supported only when all of
-the following hold:
+The evidence is interpreted in three pre-specified tiers:
 
-1. `G23W` increases MDM2 association in at least two
-   orthogonal assay formats;
-2. `G23W` increases ubiquitination and/or decreases
-   abundance-adjusted protein stability;
-3. `G23W` reduces the p53-R9 apoptotic phenotype;
-4. the result is not reproduced completely by a matched
-   180-aa truncation of canonical elephant TP53.
+1. **Binding-causal:** `G23W` increases direct MDM2
+   association in at least two orthogonal assay formats.
+2. **Regulatory-causal:** binding rescue is accompanied by an
+   MDM2-dependent change in p53-R9 regulation or by a change
+   in its guardian effect on canonical TP53.
+3. **Phenotype-causal:** the regulatory change alters
+   abundance-adjusted apoptosis or TP53 signaling and is not
+   reproduced completely by a matched 180-aa truncation of
+   canonical elephant TP53.
 
-Restoring MDM2 binding without changing apoptosis means that
-MDM2 escape is real but is not causal for the mitochondrial
-phenotype.
+Restoring MDM2 binding without changing downstream readouts
+supports a causal role for `W23G` in loss of binding, but not
+a causal role in the mitochondrial phenotype.
 
 ## Experimental phases
 
@@ -103,6 +104,25 @@ Before experimental execution:
 - verify comparable expression before interpreting downstream
   phenotypes.
 
+## Important turnover caveat
+
+The 180-aa p53-R9 protein lacks the canonical C-terminal p53
+lysines that are predominant targets of MDM2-mediated
+ubiquitination and degradation. It retains potential lysine
+targets in the N-terminal/DNA-binding portion, but restored
+MDM2 association may therefore occur without canonical
+full-length-p53 turnover.
+
+Consequently:
+
+- absence of a ubiquitination or stability change does not
+  refute restored MDM2 binding;
+- turnover is a secondary mechanistic endpoint for p53-R9;
+- the full-length canonical elephant TP53 control is required
+  to verify that the MDM2 assay can detect expected turnover;
+- binding, localization, guardian behavior and phenotype must
+  be interpreted separately.
+
 ## Endpoint hierarchy
 
 ### Primary proximal endpoint
@@ -149,10 +169,13 @@ normalization for construct abundance.
 
 ## Stop/go decisions
 
-### Go: beneficial MDM2 escape
+### Go: binding-causal MDM2 escape
 
-Proceed when `G23W` restores MDM2 association, changes
-turnover in the predicted direction and reduces apoptosis.
+Conclude that `W23G` is causal for loss of MDM2 binding when
+`G23W` restores association in orthogonal assays.
+
+Advance to a phenotype-causal claim only when a downstream
+regulatory or phenotypic consequence is also demonstrated.
 
 ### Go: distinct mitochondrial mechanism
 
