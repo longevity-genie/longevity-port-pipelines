@@ -1,5 +1,5 @@
 {
-  "artifact_count_excluding_manifest": 6,
+  "artifact_count_excluding_manifest": 11,
   "artifacts": [
     {
       "path": "docs/results/2026-07-27-elephant-tp53-r9-accession-first-checkpoint/candidate_identity_scorecard.csv",
@@ -7,9 +7,24 @@
       "size_bytes": 982
     },
     {
+      "path": "docs/results/2026-07-27-elephant-tp53-r9-accession-first-checkpoint/causal_hypotheses.csv",
+      "sha256": "291ab38bc0a27c73f2694a1c19f93e8e482ff5dbb5bc8d65ae526d14be49d9d7",
+      "size_bytes": 2767
+    },
+    {
       "path": "docs/results/2026-07-27-elephant-tp53-r9-accession-first-checkpoint/checkpoint.md",
-      "sha256": "ee2ee83cfb953cde985f9792fb1901769c860bcbbfdd02ebd6abc3d325729b34",
-      "size_bytes": 2700
+      "sha256": "f166766856e0b805f1828f4f0b718d5b7f21867252b2350b48ddc536c22b03ac",
+      "size_bytes": 3778
+    },
+    {
+      "path": "docs/results/2026-07-27-elephant-tp53-r9-accession-first-checkpoint/construct_panel.csv",
+      "sha256": "18e1c97c34ab7141bf32d7291fd2d4497e4d7922da2736e669097d38fb083347",
+      "size_bytes": 2145
+    },
+    {
+      "path": "docs/results/2026-07-27-elephant-tp53-r9-accession-first-checkpoint/experiment_spec.md",
+      "sha256": "b1a9e1a5cf4c59f3ef50fe8fee296dab9da80835ecd77a8c0347d7f5d3208ab8",
+      "size_bytes": 6092
     },
     {
       "path": "docs/results/2026-07-27-elephant-tp53-r9-accession-first-checkpoint/KF715863.1_p53_R9_180aa_working_sequence.fasta",
@@ -22,6 +37,16 @@
       "size_bytes": 1086
     },
     {
+      "path": "docs/results/2026-07-27-elephant-tp53-r9-accession-first-checkpoint/published_evidence_conflicts.csv",
+      "sha256": "b5fb0616f1b76f909e0ba21bbbacd5522d2eaafc8fcffe74d0bf35d9c2067f71",
+      "size_bytes": 2107
+    },
+    {
+      "path": "docs/results/2026-07-27-elephant-tp53-r9-accession-first-checkpoint/readout_decision_table.csv",
+      "sha256": "d2175f634a70da8801316915f408b2202988531d642bc72b7bc345ba6d125e2e",
+      "size_bytes": 2495
+    },
+    {
       "path": "docs/results/2026-07-27-elephant-tp53-r9-accession-first-checkpoint/source_summary.json",
       "sha256": "c11daa0630b4aebc733aff682c4ff06c8567f9bb5b39dbdfedd4f3d92b9c976f",
       "size_bytes": 1635
@@ -32,13 +57,26 @@
       "size_bytes": 393
     }
   ],
-  "beneficial_breakage_status": "candidate_not_causally_established",
+  "beneficial_breakage_status": "causal_experiment_pre_specified_not_yet_tested",
   "checkpoint_id": "2026-07-27-elephant-tp53-r9-accession-first-checkpoint",
-  "exact_next_action": "test_p53_R9_WT_versus_G23W_reversion",
+  "exact_next_action": "execute_or_peer_review_p53_R9_WT_versus_G23W_causal_experiment",
   "excluded_technical_comparator": {
     "accession": "KF715866.1",
     "predicted_length_aa": 168,
     "status": "exploratory_homology_guided_reconstruction_not_promoted_as_historical_TP53RTG12_identity"
+  },
+  "experimental_package": {
+    "beneficial_breakage_support_requires": [
+      "orthogonal_MDM2_association_rescue",
+      "predicted_turnover_change",
+      "reduced_abundance_adjusted_apoptosis",
+      "effect_not_fully_explained_by_matched_truncation"
+    ],
+    "construct_count": 8,
+    "hypothesis_count": 6,
+    "primary_contrast": "p53_R9_WT_G23_versus_p53_R9_G23W",
+    "published_conflict_count": 3,
+    "readout_rule_count": 7
   },
   "family_level_result": {
     "audited_record_count": 18,
@@ -58,8 +96,8 @@
   },
   "repository_head": "06506c939458d4f626839b7cb3f32c6ca98be671",
   "result_class": "positive_sequence_resolved_candidate",
-  "schema_version": 3,
+  "schema_version": 4,
   "source_directory_name": "elephant_tp53_r9_accession_first_checkpoint_v5",
   "source_execution": "external_local_audit_v5",
-  "total_checkpoint_file_count": 7
+  "total_checkpoint_file_count": 12
 }

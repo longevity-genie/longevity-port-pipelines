@@ -72,6 +72,43 @@ Required readouts:
 Include a matched 180-aa canonical elephant TP53 truncation
 control.
 
+## Causal experiment package
+
+This checkpoint now includes a pre-specified experiment that
+resolves the main biological uncertainty rather than launching
+a full-family embedding campaign.
+
+The primary contrast is:
+
+`p53-R9 WT (G23)` versus `p53-R9 G23W`.
+
+The package also includes matched 180-aa canonical elephant
+TP53 truncation controls so that a W23G effect can be
+distinguished from a generic effect of losing the C-terminal
+half of TP53.
+
+A beneficial-breakage claim requires concordant evidence that
+`G23W`:
+
+1. restores MDM2 association in orthogonal assays;
+2. changes ubiquitination or protein stability in the
+   predicted direction;
+3. reduces the p53-R9 apoptotic phenotype;
+4. produces an effect not fully explained by matched
+   truncation controls.
+
+The package separately tests the guardian and Tid1/Bax
+mitochondrial mechanisms and records the published conflict
+over whether the retrogene protein binds MDM2.
+
+See:
+
+- `experiment_spec.md`
+- `construct_panel.csv`
+- `causal_hypotheses.csv`
+- `readout_decision_table.csv`
+- `published_evidence_conflicts.csv`
+
 ## Claim boundaries
 
 - Homology-guided reconstruction is technical sequence
