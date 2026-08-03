@@ -193,6 +193,7 @@ def run_stage_6(
                     "chain": ref_emb.chain,
                     "target_species": target_sp,
                     "ref_position": int(pos),
+                    "ref_residue": ref_emb.sequence[int(pos)],
                     "delta": float(dv),
                     "is_interface": bool(int(pos) in iface),
                 })
