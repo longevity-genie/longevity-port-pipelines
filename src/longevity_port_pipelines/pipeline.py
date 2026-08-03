@@ -188,18 +188,21 @@ def run_stage_6(
             r_deltas, r_positions = align_and_compute_deltas(ref_emb, orth_emb)
             iface = set(interface_res)
             for dv, pos in zip(r_deltas, r_positions, strict=False):
-                residue_rows.append({
-                    "complex_id": ref_emb.complex_id,
-                    "chain": ref_emb.chain,
-                    "target_species": target_sp,
-                    "ref_position": int(pos),
-                    "ref_residue": ref_emb.sequence[int(pos)],
-                    "delta": float(dv),
-                    "is_interface": bool(int(pos) in iface),
-                })
+                residue_rows.append(
+                    {
+                        "complex_id": ref_emb.complex_id,
+                        "chain": ref_emb.chain,
+                        "target_species": target_sp,
+                        "ref_position": int(pos),
+                        "ref_residue": ref_emb.sequence[int(pos)],
+                        "delta": float(dv),
+                        "is_interface": bool(int(pos) in iface),
+                    }
+                )
         except Exception as exc:  # noqa: BLE001
-            logger.warning("per-residue emit failed for %s/%s: %s",
-                           ref_emb.complex_id, ref_emb.chain, exc)
+            logger.warning(
+                "per-residue emit failed for %s/%s: %s", ref_emb.complex_id, ref_emb.chain, exc
+            )
 
         result = analyze_pair(
             ref=ref_emb,
