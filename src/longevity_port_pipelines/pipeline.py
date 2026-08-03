@@ -8,6 +8,7 @@ pipeline runs identically with or without Prefect in the loop.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 import polars as pl
 
@@ -175,7 +176,7 @@ def run_stage_6(
     _, negatome_lookup = _load_negatome_pair_lookup(cfg)
 
     results: list[EnrichmentResult] = []
-    residue_rows: list[dict] = []
+    residue_rows: list[dict[str, Any]] = []
     for ref_emb, orth_emb, interface_res, source_sp, target_sp in embedding_pairs:
         if not interface_res:
             logger.warning(
