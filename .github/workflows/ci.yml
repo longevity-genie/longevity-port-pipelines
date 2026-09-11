@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Manual trigger. Push/pull_request events can silently fail to fire (an Actions outage or an
+  # exhausted org minute quota leaves "no checks reported" rather than a red check), and without
+  # this there is no way to re-run CI on demand to tell the two apart.
+  workflow_dispatch:
 
 jobs:
   lint-and-test:
